@@ -10,6 +10,8 @@ from virustotal_tddschn.virustotal_sum_search import (
     get_latest_downloaded_file,
 )
 
+# ! warning: test cases in this files are outdated
+
 
 def test_open_url():
     url = 'https://google.com'
