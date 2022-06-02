@@ -4,31 +4,27 @@ Author : Xinyuan Chen <45612704+tddschn@users.noreply.github.com>
 Date   : 2021-05-12
 Purpose: Search file or Homebrew package's checksum on VitusTotal
 """
-
-from pathlib import Path
-import platform
-import glob
-import subprocess
-
-# import webbrowser
-import hashlib
-import sys
-import argparse
+import argparse, re, sys
 import os
-from os import PathLike
-import re
-from typing import Any, Literal
+from pathlib import Path
 from . import __version__
+from .hashing import sha256_checksum, sha256_checksum_from_fh
+from .config import browser_str_to_app_name_map
+from .utils import (
+    get_latest_downloaded_file,
+    browser_str_to_app_name_map,
+    open_url,
+    macos_get_version_codename,
+)
+from .brew_utils import (
+    brew_get_file_path,
+    get_brew_cache_path,
+    get_checksum_from_brew_file,
+)
 
 # cSpell:disable
 __app_name__ = 'vtpy'
 # cSpell:enable
-browser_str_to_app_name_map = {
-    'chrome': 'Google Chrome',
-    # 'google-chrome': 'Google Chrome',
-    'safari': 'Safari',
-    'firefox': 'Firefox',
-}
 
 
 def get_args():
@@ -102,166 +98,6 @@ def get_args():
         if not re.match('[a-zA-Z@._-]+', brew_name):
             sys.exit(f'Invalid --brew argument: {brew_name} .')
     return args
-
-
-def sha256_checksum(filename: PathLike, block_size=65536) -> str:
-    sha256 = hashlib.sha256()
-    with open(filename, 'rb') as f:
-        for block in iter(lambda: f.read(block_size), b''):
-            sha256.update(block)
-    return sha256.hexdigest()
-
-
-def sha256_checksum_from_fh(fh, block_size=65536):
-    sha256 = hashlib.sha256()
-    for block in iter(lambda: fh.read(block_size), b''):
-        sha256.update(block)
-    return sha256.hexdigest()
-
-
-def open_url(url: str, browser: str):
-    # webbrowser.get(browser).open(url)
-    # this sucks!
-    # raise Error("could not locate runnable browser")
-
-    browser_app_name = browser_str_to_app_name_map[browser]
-    subprocess.call(['/usr/bin/open', '-a', browser_app_name, url])
-
-
-def brew_get_type_from_path(brew_file_path: str) -> Literal['f'] | Literal['c'] | None:
-    with open(brew_file_path) as fh:
-        file_content = fh.read()
-    if re.match(r'class [a-zA-Z0-9]+ < Formula\n', file_content):
-        return 'f'
-    elif re.match(r'cask "[a-zA-Z0-0@._-]+" do\n', file_content):
-        return 'c'
-    else:
-        return None
-
-
-def brew_get_type_and_paths(brew_name: str) -> dict[str, Any]:
-    brew_type = {'f': 0, 'c': 0}
-    formula_paths: list[str] = []
-    cask_paths: list[str] = []
-    output_dict = {
-        'brew_type': brew_type,
-        'formula_paths': formula_paths,
-        'cask_paths': cask_paths,
-    }
-
-    brew_tap_dir = subprocess.getoutput('brew --prefix') + '/Homebrew/Library/Taps'
-    if match := re.match(
-        r'([a-zA-Z0-9@._-]+)/([a-zA-Z0-9@._-]+)/([a-zA-Z0-9@._-]+)$', brew_name
-    ):
-        brew_tap_dir = os.path.join(
-            brew_tap_dir, match.group(1), 'homebrew-' + match.group(2)
-        )
-        brew_name = match.group(3)
-    matched_files = glob.glob(brew_tap_dir + f'/**/{brew_name}.rb', recursive=True)
-    if matched_files:
-        for file in matched_files:
-            file_type = brew_get_type_from_path(file)
-            if file_type == 'f':
-                brew_type['f'] = 1
-                formula_paths.append(file)
-            elif file_type == 'c':
-                brew_type['c'] = 1
-                cask_paths.append(file)
-    return output_dict
-
-
-def brew_get_file_path(brew_name: str, use_cask: bool = False) -> str | None:
-    type_and_paths = brew_get_type_and_paths(brew_name)
-    if use_cask:
-        output = type_and_paths['cask_paths'][0]
-    else:
-        # test ['f'] first, if it's FC, f would be used
-        if type_and_paths['brew_type']['f']:
-            output = type_and_paths['formula_paths'][0]
-        elif type_and_paths['brew_type']['c']:
-            output = type_and_paths['cask_paths'][0]
-        else:
-            return None
-    if output:
-        return output
-
-
-def macos_get_version_codename() -> str:
-    # version_info is like this: ('10.16', ('', '', ''), 'x86_64')
-    version_info = platform.mac_ver()
-
-    macos_version = version_info[0]
-    macos_arch = version_info[2]
-    macos_version_lookup = {'10.14': 'mojave', '10.15': 'catalina', '10.16': 'big_sur'}
-    codename = macos_version_lookup[macos_version]
-    if macos_arch != 'x86_64':
-        codename = 'arm64_' + codename
-    return codename
-
-
-def get_checksum_from_brew_file(
-    brew_file_path: str | None, codename: str | None = None
-) -> str | None:
-    if brew_file_path is None:
-        return None
-    if brew_type := brew_get_type_from_path(brew_file_path):
-        with open(brew_file_path) as fh:
-            file_content = fh.read()
-        # if brew_type == 'f':
-        #     pass
-        # elif brew_type == 'c':
-        #     if match := re.findall('^(?:  )+sha256 "([a-f0-9]{64})"$',
-        #                            file_content, re.MULTILINE):
-        #         return match[0]
-
-        # for multilang casks like firefox
-        if multilang_cask := re.search(
-            'default: true do\n(?:  )+sha256 "([a-f0-9]{64})"$',
-            file_content,
-            re.MULTILINE,
-        ):
-            return multilang_cask.group(1)
-
-        # for single lang formulas and casks
-        # - for formulas, only checks source sha256, not the bottle's
-        elif match := re.search(
-            '^(?:  )+sha256 "([a-f0-9]{64})"$', file_content, re.MULTILINE
-        ):
-            return match.group(1)
-        else:
-            sys.exit(f'Failed to find sha256 checksum in {brew_file_path} .')
-    else:
-        sys.exit(f'{brew_file_path} doesn\'t seem like a formula for cask file.')
-        # return None
-
-
-def get_brew_cache_path(brew_name: str, use_cask: bool = False) -> str:
-    brew_type = brew_get_type_and_paths(brew_name)['brew_type']
-    if use_cask:
-        cache_flag = '--cask'
-    elif sum(brew_type.values()) == 2:
-        cache_flag = '--formula'
-    else:
-        cache_flag = ''
-
-    brew_cache_command = 'brew --cache ' + cache_flag + ' ' + brew_name
-    cache_path = subprocess.getoutput(brew_cache_command).strip()
-    if cache_path:
-        return cache_path
-    else:
-        sys.exit(f'Failed to get the cache path for {brew_name} .')
-
-
-def get_latest_downloaded_file() -> Path:
-    # download_list = glob.glob(str(Path.home() / 'Downloads') + '/*')
-    # latest_downloaded_file = max(filter(os.path.isfile, download_list),
-    #                              key=os.path.getctime)
-    # return latest_downloaded_file
-    download_gen = (Path.home() / 'Downloads').glob('*')
-    latest_downloaded_file = max(
-        (f for f in download_gen if f.is_file()), key=os.path.getctime
-    )
-    return latest_downloaded_file
 
 
 def main():
