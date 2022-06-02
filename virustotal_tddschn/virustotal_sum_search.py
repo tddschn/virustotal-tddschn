@@ -26,21 +26,20 @@ from .brew_utils import (
 __app_name__ = 'vtpy'
 # cSpell:enable
 
-GET_ARGS_ARGS = (
+CREATE_ARG_PARSER_ARGS = (
     __app_name__,
     __version__,
     'Search file or Homebrew package checksum on VirusTotal',
 )
 
 
-def get_args(
+def create_arg_parser(
     __app_name__: str,
     __version__: str,
     description: str,
     add_help: bool = True,
     brew_related_options_only: bool = False,
 ):
-    """Get command-line arguments"""
 
     parser = argparse.ArgumentParser(
         prog=__app_name__,
@@ -118,16 +117,25 @@ def get_args(
     parser.add_argument(
         '-V', '--version', action='version', version=f'%(prog)s {__version__}'
     )
+    return parser
+
+
+def parse_args(
+    parser: argparse.ArgumentParser, brew_related_options_only: bool = False
+) -> argparse.Namespace:
 
     args = parser.parse_args()
     if brew_name := args.brew:
         if not re.match('[a-zA-Z@._-]+', brew_name):
-            sys.exit(f'Invalid --brew argument: {brew_name} .')
+            if brew_related_options_only:
+                parser.error(f'Invalid brew formula / cask name: {brew_name}')
+            parser.error(f'Invalid --brew argument: {brew_name} .')
     return args
 
 
 def main():
-    args = get_args(*GET_ARGS_ARGS)
+    parser = create_arg_parser(*CREATE_ARG_PARSER_ARGS)
+    args = parse_args(parser)
     if args.hash:
         hash = args.hash
         print_path_and_open_vt_link(None, hash, args)
