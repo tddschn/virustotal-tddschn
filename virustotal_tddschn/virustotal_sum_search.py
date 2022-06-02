@@ -26,25 +26,36 @@ from .brew_utils import (
 __app_name__ = 'vtpy'
 # cSpell:enable
 
+GET_ARGS_ARGS = (
+    __app_name__,
+    __version__,
+    'Search file or Homebrew package checksum on VirusTotal',
+)
 
-def get_args():
+
+def get_args(
+    __app_name__, __version__, description, brew_related_options_only: bool = False
+):
     """Get command-line arguments"""
 
     parser = argparse.ArgumentParser(
         prog=__app_name__,
-        description='Search file or Homebrew package checksum on VirusTotal',
+        description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
-    parser.add_argument('--hash', metavar='HASH', type=str, help='The hash to search')
+    if not brew_related_options_only:
+        parser.add_argument(
+            '--hash', metavar='HASH', type=str, help='The hash to search'
+        )
 
-    parser.add_argument(
-        '-f',
-        '--file',
-        metavar='FILE',
-        type=argparse.FileType('rb'),
-        help='The file to hash and check',
-    )
+        parser.add_argument(
+            '-f',
+            '--file',
+            metavar='FILE',
+            type=argparse.FileType('rb'),
+            help='The file to hash and check',
+        )
 
     parser.add_argument(
         '-b',
@@ -60,20 +71,21 @@ def get_args():
         '-B', '--no-browser', help='Do not open URLs in a browser', action='store_true'
     )
 
-    parser.add_argument(
-        '-ldl',
-        '--latest-download',
-        help='Use the latest downloaded file',
-        action='store_true',
-    )
+    if not brew_related_options_only:
+        parser.add_argument(
+            '-ldl',
+            '--latest-download',
+            help='Use the latest downloaded file',
+            action='store_true',
+        )
 
-    parser.add_argument(
-        '-w',
-        '--brew',
-        metavar='BREW',
-        help='Use the checksum in Homebrew formula or cask file',
-        type=str,
-    )
+        parser.add_argument(
+            '-w',
+            '--brew',
+            metavar='BREW',
+            help='Use the checksum in Homebrew formula or cask file',
+            type=str,
+        )
 
     # parser.add_argument(
     # '-F', '--formula', help='Use formula if a cask exists with the same name', action='store_true', default=None)
@@ -85,9 +97,10 @@ def get_args():
         '-c', '--brew-cache', metavar='BREW', help='Use brew downloaded cache'
     )
 
-    parser.add_argument(
-        '-m', '--mac', metavar='APP', help='Path to app bundle', type=str
-    )
+    if not brew_related_options_only:
+        parser.add_argument(
+            '-m', '--mac', metavar='APP', help='Path to app bundle', type=str
+        )
 
     parser.add_argument(
         '-V', '--version', action='version', version=f'%(prog)s {__version__}'
@@ -101,40 +114,39 @@ def get_args():
 
 
 def main():
-    args = get_args()
+    args = get_args(*GET_ARGS_ARGS)
     if args.hash:
         hash = args.hash
-        print_path_and_open_vt_link(None, hash)
+        print_path_and_open_vt_link(None, hash, args)
     else:
         if args.file:
             hash = sha256_checksum_from_fh(args.file)
             file_path = args.file.name
-            print_path_and_open_vt_link(file_path, hash)
+            print_path_and_open_vt_link(file_path, hash, args)
         else:
             if args.mac:
                 exec_name = Path(os.path.basename(args.mac)).with_suffix('')
                 file_path = os.path.join(args.mac, 'Contents/MacOS', exec_name)
                 hash = sha256_checksum(file_path)  # type: ignore
-                print_path_and_open_vt_link(file_path, hash)
+                print_path_and_open_vt_link(file_path, hash, args)
             elif args.brew:
                 brew_file_path = brew_get_file_path(
                     brew_name=args.brew, use_cask=args.cask
                 )
                 hash = get_checksum_from_brew_file(brew_file_path=brew_file_path)
                 file_path = brew_file_path
-                print_path_and_open_vt_link(file_path, hash)
+                print_path_and_open_vt_link(file_path, hash, args)
             elif brew_cache := args.brew_cache:
                 file_path = get_brew_cache_path(brew_cache, use_cask=args.cask)
                 hash = sha256_checksum(file_path)  # type: ignore
-                print_path_and_open_vt_link(file_path, hash)
+                print_path_and_open_vt_link(file_path, hash, args)
             elif args.latest_download:
                 file_path = get_latest_downloaded_file()
                 hash = sha256_checksum(file_path)
-                print_path_and_open_vt_link(file_path, hash)
+                print_path_and_open_vt_link(file_path, hash, args)
 
 
-def print_path_and_open_vt_link(file_path, hash):
-    args = get_args()
+def print_path_and_open_vt_link(file_path, hash, args):
     if file_path:
         print(f'File path:       {file_path}')
     if hash:
