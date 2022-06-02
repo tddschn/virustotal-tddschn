@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Author : tscp <tscp@localhost>
+Author : Xinyuan Chen <45612704+tddschn@users.noreply.github.com>
 Date   : 2021-05-12
 Purpose: Search file or Homebrew package's checksum on VitusTotal
 """
@@ -23,9 +23,9 @@ from . import __version__
 # cSpell:disable
 __app_name__ = 'vtpy'
 # cSpell:enable
-browser_str_to_app_name = {
+browser_str_to_app_name_map = {
     'chrome': 'Google Chrome',
-    'google-chrome': 'Google Chrome',
+    # 'google-chrome': 'Google Chrome',
     'safari': 'Safari',
     'firefox': 'Firefox',
 }
@@ -56,8 +56,8 @@ def get_args():
         help='Browser to open URLs',
         metavar='browser',
         type=str,
-        choices=['google-chrome', 'firefox', 'safari'],
-        default='google-chrome',
+        choices=list(browser_str_to_app_name_map),
+        default='chrome',
     )
 
     parser.add_argument(
@@ -124,7 +124,7 @@ def open_url(url: str, browser: str):
     # this sucks!
     # raise Error("could not locate runnable browser")
 
-    browser_app_name = browser_str_to_app_name[browser]
+    browser_app_name = browser_str_to_app_name_map[browser]
     subprocess.call(['/usr/bin/open', '-a', browser_app_name, url])
 
 
