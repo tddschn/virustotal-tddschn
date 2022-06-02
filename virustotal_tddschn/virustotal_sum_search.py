@@ -34,7 +34,10 @@ GET_ARGS_ARGS = (
 
 
 def get_args(
-    __app_name__, __version__, description, brew_related_options_only: bool = False
+    __app_name__: str,
+    __version__: str,
+    description: str,
+    brew_related_options_only: bool = False,
 ):
     """Get command-line arguments"""
 
@@ -43,6 +46,14 @@ def get_args(
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+
+    if brew_related_options_only:
+        parser.add_argument(
+            'brew',
+            metavar='BREW',
+            help='The formula or cask name to check',
+            type=str,
+        )
 
     if not brew_related_options_only:
         parser.add_argument(
