@@ -37,12 +37,14 @@ def get_args(
     __app_name__: str,
     __version__: str,
     description: str,
+    add_help: bool = True,
     brew_related_options_only: bool = False,
 ):
     """Get command-line arguments"""
 
     parser = argparse.ArgumentParser(
         prog=__app_name__,
+        add_help=add_help,
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
