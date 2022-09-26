@@ -6,6 +6,15 @@ from pathlib import Path
 from .config import browser_str_to_app_name_map
 
 
+def get_arch() -> str:
+    import platform
+
+    if platform.machine() == 'arm64':
+        return 'arm'
+    else:
+        return 'intel'
+
+
 def open_url(url: str, browser: str):
     # webbrowser.get(browser).open(url)
     # this sucks!
@@ -42,6 +51,7 @@ def macos_get_version_codename() -> str:
     if macos_arch != 'x86_64':
         codename = 'arm64_' + codename
     return codename
+
 
 def get_latest_downloaded_file() -> Path:
     # download_list = glob.glob(str(Path.home() / 'Downloads') + '/*')

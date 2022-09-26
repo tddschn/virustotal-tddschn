@@ -15,6 +15,7 @@ from .utils import (
     browser_str_to_app_name_map,
     open_url,
     macos_get_version_codename,
+    get_arch,
 )
 from .brew_utils import (
     brew_get_file_path,
@@ -115,6 +116,14 @@ def create_arg_parser(
         )
 
     parser.add_argument(
+        '-F',
+        '--brew-file',
+        help='Use the checksum in the brew formula or cask file',
+        type=Path,
+        metavar='PATH',
+    )
+
+    parser.add_argument(
         '-V', '--version', action='version', version=f'%(prog)s {__version__}'
     )
     return parser
@@ -150,11 +159,18 @@ def main():
                 file_path = os.path.join(args.mac, 'Contents/MacOS', exec_name)
                 hash = sha256_checksum(file_path)  # type: ignore
                 print_path_and_open_vt_link(file_path, hash, args)
+            elif args.brew_file:
+                hash = get_checksum_from_brew_file(args.brew_file.read_text())
+                print_path_and_open_vt_link(args.brew_file, hash, args)
             elif args.brew:
                 brew_file_path = brew_get_file_path(
                     brew_name=args.brew, use_cask=args.cask
                 )
-                hash = get_checksum_from_brew_file(brew_file_path=brew_file_path)
+                if brew_file_path is None:
+                    raise FileNotFoundError(
+                        f'Cannot find brew formula or cask file for {args.brew} .'
+                    )
+                hash = get_checksum_from_brew_file(Path(brew_file_path).read_text())
                 file_path = brew_file_path
                 print_path_and_open_vt_link(file_path, hash, args)
             elif brew_cache := args.brew_cache:
