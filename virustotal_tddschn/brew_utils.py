@@ -129,7 +129,7 @@ def get_brew_cache_path(brew_name: str, use_cask: bool = False) -> str:
     brew_type = brew_get_type_and_paths(brew_name)['brew_type']
     if use_cask:
         cache_flag = '--cask'
-    elif sum(brew_type.values()) == 2:
+    elif sum(brew_type.values()) == 2:  # type: ignore
         cache_flag = '--formula'
     else:
         cache_flag = ''
