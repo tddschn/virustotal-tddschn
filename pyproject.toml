@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "virustotal-tddschn"
-version = "0.2.0"
+version = "0.2.1"
 description = "VirusTotal Utility Scripts"
 authors = ["Xinyuan Chen <45612704+tddschn@users.noreply.github.com>"]
 license = "MIT"
