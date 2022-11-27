@@ -7,9 +7,7 @@ license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/tddschn/virustotal-tddschn"
 repository = "https://github.com/tddschn/virustotal-tddschn"
-classifiers = [
-    "Topic :: Utilities"
-]
+classifiers = ["Topic :: Utilities"]
 keywords = ["virustotal"]
 # packages = [
 #     { include = "virustotal_tddschn" },
@@ -24,13 +22,11 @@ vtpy = "virustotal_tddschn.virustotal_sum_search:main"
 [tool.poetry.dependencies]
 python = "^3.10"
 
-[tool.poetry.dev-dependencies]
-pytest = "^5.2"
-black = "^22.3.0"
-better-exceptions = "^0.3.3"
-
 [tool.poetry.group.dev.dependencies]
 ipython = "^8.5.0"
+pytest = "^7.2.0"
+black = "^22.3.0"
+better-exceptions = "^0.3.3"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
