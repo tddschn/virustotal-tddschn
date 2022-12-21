@@ -3,7 +3,26 @@
 
 import os
 from pathlib import Path
-from .config import browser_str_to_app_name_map
+from .config import (
+    browser_str_to_app_name_map,
+    vt_cli_api_key_env_var_name,
+    vt_cli_config_file_path,
+)
+
+
+def get_virustotal_api_key(
+    env_var_name: str = vt_cli_api_key_env_var_name,
+) -> str | None:
+    api_key = os.getenv(env_var_name)
+    if not api_key:
+        import tomllib
+
+        try:
+            api_key = tomllib.loads(vt_cli_config_file_path.read_text())['apikey']
+            return api_key
+        except:
+            return None
+    return api_key
 
 
 def get_arch() -> str:
