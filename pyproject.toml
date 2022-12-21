@@ -21,6 +21,7 @@ vtpy = "virustotal_tddschn.virustotal_sum_search:main"
 
 [tool.poetry.dependencies]
 python = "^3.10"
+vt-py = "^0.17.3"
 
 [tool.poetry.group.dev.dependencies]
 ipython = "^8.5.0"
