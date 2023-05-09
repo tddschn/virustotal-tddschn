@@ -77,7 +77,8 @@ def create_arg_parser(
         metavar='browser',
         type=str,
         choices=list(browser_str_to_app_name_map),
-        default='chrome',
+        # default='chrome',
+        default=None
     )
 
     parser.add_argument(

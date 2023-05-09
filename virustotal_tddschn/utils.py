@@ -3,6 +3,7 @@
 
 import os
 from pathlib import Path
+from re import sub
 from .config import (
     browser_str_to_app_name_map,
     vt_cli_api_key_env_var_name,
@@ -34,13 +35,16 @@ def get_arch() -> str:
         return 'intel'
 
 
-def open_url(url: str, browser: str):
+def open_url(url: str, browser: str | None = None):
     # webbrowser.get(browser).open(url)
     # this sucks!
     # raise Error("could not locate runnable browser")
 
     import subprocess
 
+    if not browser:
+        subprocess.call(['open', url])
+        return
     browser_app_name = browser_str_to_app_name_map[browser]
     # subprocess.call(['/usr/bin/open', '-a', browser_app_name, url])
     subprocess.call(['open', '-a', browser_app_name, url])
